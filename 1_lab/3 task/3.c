@@ -32,8 +32,8 @@ int copy_data (const char* source_path, const char* dest_path)
     buffer = (char*)malloc(sizeof(char) * capacity);
     if (buffer == NULL)
     {
-        fclode(source_file);
-        fclode(dest_file);
+        fclose(source_file);
+        fclose(dest_file);
         return ERR_MALLOC;
     }
 
@@ -44,8 +44,8 @@ int copy_data (const char* source_path, const char* dest_path)
             if (temp == NULL)
             {
                 free(buffer);
-                fclode(source_file);
-                fclode(dest_file);
+                fclose(source_file);
+                fclose(dest_file);
                 return ERR_MALLOC;
             }
             buffer = temp;
@@ -55,8 +55,8 @@ int copy_data (const char* source_path, const char* dest_path)
         if (bytes_read != bytes_written)
         {
             free(buffer);
-            fclode(source_file);
-            fclode(dest_file);
+            fclose(source_file);
+            fclose(dest_file);
             return EXIT_FAILURE;
         }
     }
@@ -64,13 +64,13 @@ int copy_data (const char* source_path, const char* dest_path)
     if(ferror(source_file))
     {
         free(buffer);
-        fclode(source_file);
-        fclode(dest_file);
+        fclose(source_file);
+        fclose(dest_file);
         return EXIT_FAILURE;
     }
     free(buffer);
-    fclode(source_file);
-    fclode(dest_file);
+    fclose(source_file);
+    fclose(dest_file);
     return EXIT_SUCCESS;
 }
 
@@ -87,4 +87,5 @@ int main(int argc, char* argv[])
 
     result = copy_data(source_path, dest_path);
     return result;
+
 }
