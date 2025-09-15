@@ -102,7 +102,7 @@ int is_valid_login(const char* login)
     }
     for (i; i < len; ++i)
     {
-        if(!isalnum(login[i]) || !isascii(login[i])) return ERR_INVALID_LOGIN;
+        if(!isalnum(login[i])) return ERR_INVALID_LOGIN;
     }
     return OK;
 }
