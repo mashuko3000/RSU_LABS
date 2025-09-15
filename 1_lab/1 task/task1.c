@@ -21,22 +21,34 @@ void dump_file_struct(FILE *f) {
 
 int main(int argc, char* argv[])
 {
+    char* file_to_upd;
+    unsigned char bytes[] = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5};
+    size_t num_bytes;
+    FILE* ftc;
+    size_t written;
+    FILE* ftr;
+    unsigned char byte;
+    int i = 0;
+    FILE* ftr_2;
+    char* buf;
+    size_t read_bytes;
+    int j = 0;
+
     if (argc < 2)
     {
         return NOT_ENOUGH_ARG;
     }
 
-    const char* file_to_upd = argv[1];
-    unsigned char bytes[] = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5};
-    size_t num_bytes = sizeof(bytes);
+    file_to_upd = argv[1];
+    num_bytes = sizeof(bytes);
 
-    FILE* ftc = fopen(file_to_upd, "wb");
+    ftc = fopen(file_to_upd, "wb");
     if (!ftc){
         perror("File couldn't be opened, please try again");
         return FAILED_TO_OPEN;
     }
 
-    size_t written = fwrite(bytes, 1, num_bytes, ftc);
+    written = fwrite(bytes, 1, num_bytes, ftc);
     if (written != num_bytes)
     {
         perror("Error while trying to write bytes");
@@ -46,15 +58,14 @@ int main(int argc, char* argv[])
     fclose(ftc);
 
 
-    FILE* ftr = fopen(file_to_upd, "rb");
+    ftr = fopen(file_to_upd, "rb");
     if (!ftr)
     {
         perror("File couldn't be open");
         return FAILED_TO_OPEN;
     }
 
-    unsigned char byte;
-    int i = 0;
+    
     while (fread(&byte, 1, 1, ftr) == 1)
     {
         printf("Byte %d : %u\n", i, byte);
@@ -66,7 +77,7 @@ int main(int argc, char* argv[])
     
     fclose(ftr);
 
-    FILE* ftr_2 = fopen (file_to_upd, "rb");
+    ftr_2 = fopen (file_to_upd, "rb");
     if (!ftr_2) 
     {
         perror("Error reopening file");
@@ -80,8 +91,8 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    char* buf = malloc(sizeof(char) * 20);
-    size_t read_bytes = fread(buf, 1, 4, ftr_2);
+    buf = (char*)malloc(sizeof(char) * 20);
+    read_bytes = fread(buf, 1, 4, ftr_2);
     if (read_bytes != 4) {
         perror("Error reading 4 bytes");
         fclose(ftr_2);
@@ -89,7 +100,7 @@ int main(int argc, char* argv[])
     }
 
     printf("Buffer after fread: ");
-    for (int j = 0; j < 4; j++) {
+    for (j = 0; j < 4; j++) {
         printf("%u ", buf[j]);
     }
     printf("\n");
