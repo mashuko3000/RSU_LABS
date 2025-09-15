@@ -4,71 +4,99 @@
 #include <ctype.h>
 #include <string.h>
 
-void perform_xor8(const uint8_t *data, size_t size, uint8_t* result)
+#define OK 0
+#define ERR_FILE_OPEN 1
+#define ERR_MEMORY 2
+#define ERR_INVALID_ARGS 3
+#define ERR_PARSEHEX 4
+#define ERR_FILE_TOO_SMMALL 5
+
+void perform_xor8(FILE* file, uint8_t* result)
 {
-    if(data == NULL || result == NULL) return;
+    if(file == NULL || result == NULL) return;
+    uint8_t byte;
     *result = 0;
-    for (int i = 0; i < size; ++i)
+    while(fread(&byte, 1, 1, file))
     {
-        (*result) ^= data[i];
+        *result^=byte;
     }
 }
 
-int is_prime(unsigned char n)
+int is_prime(unsigned int n)
 {
     if (n <= 1) return 0;
     if (n <= 3) return 1;
     if (n % 2 == 0 || n % 3 == 0) return 0;
-    for (unsigned char i = 5; i * i <= n; i += 6)
+
+    unsigned int i = 0;
+
+    for (i = 5; i * i <= n; i += 6)
     {
         if (n % i == 0 || n %(i+2) == 0) return 0;
     }
     return 1;
 }
 
-void perform_xorodd(const uint8_t *data, size_t size, uint32_t* result)
+int perform_xorodd(FILE* file, size_t* size, uint32_t* result)
 {
-    if (data == NULL || result == NULL) return;
-    (*result) = 0;
-    size_t num_blocks = size/4;
-    for (size_t i = 0; i < size; ++i)
+    if (file == NULL || result == NULL) return ERR_INVALID_ARGS;
+
+    uint8_t block[4];
+    size_t total_read = 0;
+    *result = 0;
+
+    while(fread(block, 1, 4, file) == 4)
     {
-        const uint8_t *block = &data[i*4];
+        int j = 0;
         int has_prime = 0;
-        for (int j = 0; j < 4; ++j)
+        for(j = 0; j<4; ++j)
         {
-            if(is_prime(block[j]))
+            if (is_prime(block[j]))
             {
                 has_prime = 1;
                 break;
             }
         }
-        if (has_prime)
+        if(has_prime)
         {
-            uint32_t block_val = *(const uint32_t *)block;
-            (*result)^=block_val;
+            uint32_t block_val;
+            memcpy(&block_val, block, sizeof(uint32_t));
+            *result ^= block_val;
         }
     }
+
+    *size = total_read;
+    if(ferror(file)) return ERR_FILE_OPEN;
+    return OK;
 }
 
-void perform_mask(const uint8_t *data, size_t size, uint32_t mask, uint32_t *count)
+int perform_mask(FILE* file, size_t *size, uint32_t mask, uint32_t *count)
 {
+    if (file == NULL || count == NULL) return ERR_INVALID_ARGS;
+
+    uint8_t block[4];
+    size_t total_read = 0;
     *count = 0;
-    size_t num_blocks = size/4;
-    for(size_t i = 0; i<num_blocks; ++i)
+
+    while(fread(block, 1, 4, file) == 4)
     {
-        const uint8_t *block = &data[i*4];
-        uint32_t val = *(const uint32_t *)block;
-        if((val & mask) == mask)
+        uint32_t val;
+        memcpy(&val, block, sizeof(uint32_t));
+        if((val&mask) == mask)
         {
             ++(*count);
         }
+        total_read += 4;
     }
+    *size = total_read;
+    if(ferror(file)) return ERR_FILE_OPEN;
+    return OK;
 }
+
 
 int parsing_hex(const char *hex_str, uint32_t* mask)
 {
-    if ((hex_str == NULL) || (*hex_str == '\0')) return -1;
+    if ((hex_str == NULL) || (*hex_str == '\0' || mask == NULL)) return -1;
 
     *mask = 0;
     const char *ptr = hex_str;
@@ -94,135 +122,111 @@ int parsing_hex(const char *hex_str, uint32_t* mask)
         }
         else
         {
-            return EXIT_FAILURE;
+            return ERR_PARSEHEX;
         }
 
         if (*mask > 0x0FFFFFFF)
         {
-            return EXIT_FAILURE;
+            return ERR_PARSEHEX;
         }
         *mask = (*mask << 4) | digit;
         ++ptr;
     }
 
-    return EXIT_SUCCESS;
-}
-
-int read_file (const char* filepath, uint8_t **data, size_t *size)
-{
-    FILE* file = fopen(filepath, "rb");
-    if (file == NULL)
-    {
-        return EXIT_FAILURE;
-    }
-
-    size_t capacity = 30;
-    *data = malloc(sizeof(uint8_t) * capacity);
-    if(*data == NULL)
-    {
-        fclose(file);
-        return EXIT_FAILURE;
-    }
-
-    size_t total_read = 0;
-    size_t bytes_read = 0;
-    while((bytes_read = fread(*data + total_read, 1, capacity - total_read, file)) > 0)
-    {
-        total_read += bytes_read;
-        if(total_read == capacity)
-        {
-            uint8_t *tmp = realloc(data, sizeof(uint8_t) * 2 * capacity);
-            if (tmp == NULL)
-            {
-                fclose(file);
-                free(*data);
-                return EXIT_FAILURE;
-            }
-            *data = tmp;
-        }
-    }
-
-    if (ferror(file))
-    {
-        free(*data);
-        fclose(file);
-        return EXIT_FAILURE;
-    }
-
-    fclose(file);
-    *size = total_read;
-    return EXIT_SUCCESS;
+    return OK;
 }
 
 int main(int argc, char *argv[])
 {
-    if (argc < 3 || (strcmp(argv[2], "mask") == 0) || argc != 4)
+    if (argc < 3)
     {
-        return EXIT_FAILURE;
+        return ERR_INVALID_ARGS;
     }
 
-    const char*input_path = argv[1];
-    const char *flag = argv[2];
+    if (strcmp(argv[2], "mask") == 0 && argc != 4) return ERR_INVALID_ARGS;
+    if (strcmp(argv[2], "mask") == 0 && argc != 3) return ERR_INVALID_ARGS;
 
+    FILE* file = fopen(argv[1], "rb");
+    if (file == NULL)
+    {
+        return ERR_FILE_OPEN;
+    }
+
+    const char *flag = argv[2];
     uint8_t *data = NULL;
     size_t size = 0;
-    if(read_file(input_path, &data, &size) != EXIT_SUCCESS)
-    {
-        return EXIT_FAILURE;
-    }
+    uint8_t xor8_result;
+    uint32_t xorodd_result;
+    uint32_t mask;
+    uint32_t mask_count;
+    int err = 0;
 
     if (strcmp(flag, "xor8") == 0) 
     {
-        uint8_t xor8_result;
-        perform_xor8(data, size, &xor8_result);
+        perform_xor8(file, &xor8_result);
+        if (ferror(file))
+        {
+            fclose(file);
+            return ERR_FILE_OPEN;
+        }
         printf("RESULT FLAG xor8: %02X\n", xor8_result);
     }
+
+
     else if(strcmp(flag, "xorodd")==0)
     {
+        err = perform_xorodd(file, &size, &xorodd_result);
+        if (err != OK)
+        {
+            fclose(file);
+            return err;
+        }
+
         if (size < 4 && size > 0)
         {
             fprintf(stderr, "Error : File too small for this operation");
-            return EXIT_FAILURE;
+            fclose(file);
+            return ERR_FILE_TOO_SMMALL;
         }
         if (size%4 != 0) 
         {
             fprintf(stderr, "WARNING File size not multiple of 4 bytes, ignoring trailing bytes");
         }
-        uint32_t xorodd_result;
-        perform_xorodd(data, size, &xorodd_result);
         printf("RESULT FLAG xorodd: %08X\n", xorodd_result);
     }
+
     else if(strcmp(flag, "mask") == 0)
     {
-        if(argc != 4)
+        err = parsing_hex(argv[3], &mask);
+        if (err != OK)
         {
-            return EXIT_FAILURE;
+            fclose(file);
+            return err;
         }
-        else
+        err = perform_mask(file, &size, mask, &mask_count);
+        if (err != OK)
         {
-            uint32_t mask;
-            if(parsing_hex(argv[3], &mask) != EXIT_SUCCESS)
-            {
-                return EXIT_FAILURE;
-            }
-            else
-            {
-                if (size < 4 && size > 0)
-                {
-                    return EXIT_FAILURE;
-                }
-                else if (size % 4 != 0)
-                {
-                    fprintf(stderr, "WARNING File size not multiple of 4 bytes, ignoring trailing bytes");
-                }
-                uint32_t mask_count;
-                perform_mask(data, size, mask, &mask_count);
-                printf("%u \n", mask_count);
-            }
+            fclose(file);
+            return err;
         }
+        if (size < 4)
+        {
+            fclose(file);
+            return ERR_FILE_TOO_SMMALL;
+        }
+        if (size % 4 != 0)
+        {
+            fprintf(stderr, "WARNING File size not multiple of 4 bytes, ignoring trailing bytes");
+        }
+        printf("%u \n", mask_count);
     }
-    else{
+
+    else
+    {
         fprintf(stderr, "Unknown flag: %s \n", flag);
+        free(data);
+        return ERR_INVALID_ARGS;
     }
-    return EXIT_SUCCESS;
+    fclose(file);
+    return OK;
 }
