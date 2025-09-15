@@ -13,9 +13,11 @@
 
 void perform_xor8(FILE* file, uint8_t* result)
 {
-    if(file == NULL || result == NULL) return;
     uint8_t byte;
     *result = 0;
+
+
+    if(file == NULL || result == NULL) return;
     while(fread(&byte, 1, 1, file))
     {
         *result^=byte;
@@ -24,12 +26,14 @@ void perform_xor8(FILE* file, uint8_t* result)
 
 int is_prime(unsigned int n)
 {
+    unsigned int i = 0;
+
+
     if (n <= 1) return 0;
     if (n <= 3) return 1;
     if (n % 2 == 0 || n % 3 == 0) return 0;
 
-    unsigned int i = 0;
-
+    
     for (i = 5; i * i <= n; i += 6)
     {
         if (n % i == 0 || n %(i+2) == 0) return 0;
@@ -39,16 +43,21 @@ int is_prime(unsigned int n)
 
 int perform_xorodd(FILE* file, size_t* size, uint32_t* result)
 {
-    if (file == NULL || result == NULL) return ERR_INVALID_ARGS;
-
     uint8_t block[4];
     size_t total_read = 0;
     *result = 0;
 
+    int j = 0;
+    int has_prime = 0;
+    uint32_t block_val;
+
+
+    if (file == NULL || result == NULL) return ERR_INVALID_ARGS;
+
+    
     while(fread(block, 1, 4, file) == 4)
     {
-        int j = 0;
-        int has_prime = 0;
+        
         for(j = 0; j<4; ++j)
         {
             if (is_prime(block[j]))
@@ -59,7 +68,6 @@ int perform_xorodd(FILE* file, size_t* size, uint32_t* result)
         }
         if(has_prime)
         {
-            uint32_t block_val;
             memcpy(&block_val, block, sizeof(uint32_t));
             *result ^= block_val;
         }
@@ -72,15 +80,16 @@ int perform_xorodd(FILE* file, size_t* size, uint32_t* result)
 
 int perform_mask(FILE* file, size_t *size, uint32_t mask, uint32_t *count)
 {
-    if (file == NULL || count == NULL) return ERR_INVALID_ARGS;
-
     uint8_t block[4];
     size_t total_read = 0;
     *count = 0;
+    uint32_t val;
 
+    if (file == NULL || count == NULL) return ERR_INVALID_ARGS;
+
+    
     while(fread(block, 1, 4, file) == 4)
     {
-        uint32_t val;
         memcpy(&val, block, sizeof(uint32_t));
         if((val&mask) == mask)
         {
@@ -96,10 +105,12 @@ int perform_mask(FILE* file, size_t *size, uint32_t mask, uint32_t *count)
 
 int parsing_hex(const char *hex_str, uint32_t* mask)
 {
-    if ((hex_str == NULL) || (*hex_str == '\0' || mask == NULL)) return -1;
-
     *mask = 0;
     const char *ptr = hex_str;
+    uint32_t digit;
+
+    if ((hex_str == NULL) || (*hex_str == '\0' || mask == NULL)) return -1;
+
     while(*ptr == ' ')
     {
         ++ptr;
@@ -107,7 +118,6 @@ int parsing_hex(const char *hex_str, uint32_t* mask)
 
     while (*ptr != '\0')
     {
-        uint32_t digit;
         if(*ptr >= '0' && *ptr <= '9')
         {
             digit = *ptr - '0';
@@ -138,20 +148,7 @@ int parsing_hex(const char *hex_str, uint32_t* mask)
 
 int main(int argc, char *argv[])
 {
-    if (argc < 3)
-    {
-        return ERR_INVALID_ARGS;
-    }
-
-    if (strcmp(argv[2], "mask") == 0 && argc != 4) return ERR_INVALID_ARGS;
-    if (strcmp(argv[2], "mask") == 0 && argc != 3) return ERR_INVALID_ARGS;
-
-    FILE* file = fopen(argv[1], "rb");
-    if (file == NULL)
-    {
-        return ERR_FILE_OPEN;
-    }
-
+    FILE* file;
     const char *flag = argv[2];
     uint8_t *data = NULL;
     size_t size = 0;
@@ -160,6 +157,19 @@ int main(int argc, char *argv[])
     uint32_t mask;
     uint32_t mask_count;
     int err = 0;
+
+    if (argc < 3)
+    {
+        return ERR_INVALID_ARGS;
+    }
+
+    if (strcmp(argv[2], "mask") == 0 && (argc != 4 || argc != 3)) return ERR_INVALID_ARGS;
+
+    file = fopen(argv[1], "rb");
+    if (file == NULL)
+    {
+        return ERR_FILE_OPEN;
+    }
 
     if (strcmp(flag, "xor8") == 0) 
     {
