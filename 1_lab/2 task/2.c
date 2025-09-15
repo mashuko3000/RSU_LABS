@@ -55,14 +55,15 @@ void signal_handler(int signum)
 char *read_string()
 {
     int capacity = 20;
-    char *str = malloc(sizeof(char) * capacity);
+    char *str = (char*)malloc(sizeof(char) * capacity);
+    int size = 0;
+    int c;
+    char* new;
+
     if (str == NULL)
     {
         return NULL;
     }
-
-    int size = 0;
-    int c;
 
     while ((c = getchar()) != '\n' && c!= EOF)
     {
@@ -73,7 +74,7 @@ char *read_string()
         }
         if (size + 1 == capacity)
         {
-            char* new = realloc(str, sizeof(char) * capacity * 2);
+            new = (char*)realloc(str, sizeof(char) * capacity * 2);
             if (new == NULL)
             {
                 free(str);
@@ -90,9 +91,10 @@ char *read_string()
 
 int is_valid_login(const char* login)
 {
-    if (login == NULL) return ERR_INVALID_LOGIN;
     int i = 0;
     int len = strlen(login);
+
+    if (login == NULL) return ERR_INVALID_LOGIN;
 
     if(len == 0 || len > 6)
     {
@@ -107,8 +109,10 @@ int is_valid_login(const char* login)
 
 int find_user(System* state, const char* login)
 {
+    int i;
+
     if(state == NULL || login == NULL) return ERR_INPUT;
-    for(int i = 0; i < state->user_count; i++)
+    for(i = 0; i < state->user_count; i++)
     {
         if(strcmp(state->users[i].login, login) == 0) return i;
     }
@@ -117,13 +121,15 @@ int find_user(System* state, const char* login)
 
 int expand_users(System *state)
 {
+    User* temp;
+
     if(state == NULL) return ERR_INPUT;
     if(state->user_count >= state->user_capacity)
     {
         if(state->user_capacity == 0)
         {
             state->user_capacity = 1;
-            state->users = malloc(sizeof(user) * state->user_capacity);
+            state->users = (user*)malloc(sizeof(user) * state->user_capacity);
             if(state->users == NULL)
             {
                 return ERR_MALLOC;
@@ -132,7 +138,7 @@ int expand_users(System *state)
         }
         else
         {
-            User* temp = realloc(state->users, sizeof(user) * state->user_capacity * 2);
+            temp = (user*)realloc(state->users, sizeof(user) * state->user_capacity * 2);
             if (temp == NULL)
             {
                 return ERR_REALLOC;
@@ -146,11 +152,12 @@ int expand_users(System *state)
 
 int register_new_user(System* state)
 {
-    if(state == NULL) return ERR_INPUT;
-    printf("Registration: ");
-
     char *login = NULL;
     int result;
+    int pin;
+
+    if(state == NULL) return ERR_INPUT;
+    printf("Registration: ");
 
     do
     {
@@ -186,7 +193,7 @@ int register_new_user(System* state)
 
 
     printf("Buddy, enter PIN (0 to 100000): ");
-    int pin;
+    
 
 
     if(scanf("%d", &pin) != 1)
@@ -230,23 +237,25 @@ int register_new_user(System* state)
 
 int login_user(System* state)
 {
+    char* login;
+    int idx;
+    int pin;
+
     if (state == NULL) return ERR_INPUT;
     printf("Login: \n");
-    char* login = read_string();
+    login = read_string();
     if (login == NULL)
     {
         return ERR_CANCEL;
     }
 
-    int idx = find_user(state, login);
+    idx = find_user(state, login);
     while (idx == -1)
     {
         printf("User not found!");
         free(login);
         return ERR_USER_NOT_FOUND;
     }
-
-    int pin;
 
     while(1)
     {
@@ -321,22 +330,25 @@ int parse_datetime(const char *datetime, struct tm *tm) {
 }
 
 void howmuch(const char *datetime, const char *flag) {
+    struct tm input_time = {0};
+    time_t now = time(NULL);
+    time_t input = mktime(&input_time);
+    double diff;
+
     if (datetime == NULL || flag == NULL) return;
 
-    struct tm input_time = {0};
+    
     if (!parse_datetime(datetime, &input_time)) {
         printf("Invalid datetime format! Use dd:MM:yyyy hh:mm:ss\n");
         return;
     }
 
-    time_t now = time(NULL);
-    time_t input = mktime(&input_time);
     if(input == (time_t) - 1)
     {
         perror("mktine failed");
         return;
     }
-    double diff = difftime(now, input);
+    diff = difftime(now, input);
 
     if (strcmp(flag, "-s") == 0) {
         printf("Time passed: %.0f seconds\n", diff);
@@ -352,18 +364,23 @@ void howmuch(const char *datetime, const char *flag) {
 }
 
 void sanctions(System *state, const char *username) {
+    int idx;
+    int code;
+    int limit;
+
+
     if (state == NULL || username == NULL)
     {
         return;
     }
-    int idx = find_user(state, username);
+    idx = find_user(state, username);
     if (idx == -1) {
         printf("User %s not found!\n", username);
         return;
     }
 
     printf("Enter confirmation code: ");
-    int code;
+    
     if (scanf("%d", &code) != 1)
     {
         printf("Invalid input. \n");
@@ -378,7 +395,7 @@ void sanctions(System *state, const char *username) {
     }
 
     printf("Enter command limit for %s: ", username);
-    int limit;
+    
     if (scanf("%d", &limit) != 1)
     {
         printf("Invalid input. \n");
@@ -408,6 +425,12 @@ int check_command_limit(System *state) {
 }
 
 void shell_loop(System *state) {
+    char *command;
+    char *datetime;
+    char *flag;
+    char *username;
+
+
     if (state == NULL) return;
     while (1) {
         if (exit_flag)
@@ -423,7 +446,7 @@ void shell_loop(System *state) {
 
 
         printf("> ");
-        char *command = read_string();
+        command = read_string();
         if (command == NULL)
         {
             state->current_user_index = -1;
@@ -443,8 +466,8 @@ void shell_loop(System *state) {
 
         else if (strcmp(command, "Howmuch") == 0)
         {
-            char *datetime = read_string();
-            char *flag = read_string();
+            datetime = read_string();
+            flag = read_string();
             if(datetime != NULL && flag!=NULL)
             {
                 howmuch(datetime, flag);
@@ -465,7 +488,7 @@ void shell_loop(System *state) {
             return;
 
         } else if (strcmp(command, "Sanctions") == 0) {
-            char *username = read_string();
+            username = read_string();
             if (username != NULL)
             {
                 sanctions(state, username);
@@ -484,10 +507,12 @@ void shell_loop(System *state) {
 }
 
 void free_System_state(System *state) {
+    int i;
+
     if(state == NULL) return;
     if(state->users != NULL)
     {
-        for (int i = 0; i < state -> user_count; i++)
+        for (i = 0; i < state -> user_count; i++)
         {
             if (state->users[i].login != NULL)
             {
@@ -501,7 +526,7 @@ void free_System_state(System *state) {
 
 System* init_System()
 {
-    System* state = malloc(sizeof(System));
+    System* state = (System*)malloc(sizeof(System));
     if (state == NULL)
     {
         return NULL;
@@ -515,6 +540,8 @@ System* init_System()
 
 int main() {
     System *state = init_System();
+    int choice;
+    
     if (state == NULL)
     {
         return 1;
@@ -534,7 +561,7 @@ int main() {
         }
         if (state->current_user_index == -1) {
             printf("\n1. Login\n2. Register\n3. Exit\nChoose an option: ");
-            int choice;
+            
             if (scanf("%d", &choice) != 1) {
                 printf("Invalid input. Exiting.\n");
                 clear_input_buffer();
