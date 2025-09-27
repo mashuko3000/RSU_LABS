@@ -1,0 +1,3 @@
+UPDATE public.author
+SET last_name = 'Есенин', first_name = 'Сергей'
+WHERE id = 10;

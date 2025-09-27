@@ -1,0 +1,4 @@
+INSERT INTO public.book(title, author_id,publishing_house_id, version, publishing_year, circulation)
+VALUES
+	('Евгений Онегин', 12, 1, '1-е', 1833, 10000),
+	('Война и мир', 21, 2, '1-е', 1869, 20000);

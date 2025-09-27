@@ -1,0 +1,5 @@
+INSERT INTO public.book_instance(book_id, state, status, location_id)
+VALUES 
+	(3, 'excellent', 'in stock', 1),
+	(4, 'good', 'in stock', 2),
+	(3, 'satisfactory', 'issued', 1)

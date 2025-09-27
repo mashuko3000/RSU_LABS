@@ -1,0 +1,1 @@
+TRUNCATE TABLE public.publishing_house RESTART IDENTITY CASCADE;
