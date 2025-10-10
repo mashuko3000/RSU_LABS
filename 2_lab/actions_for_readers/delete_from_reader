@@ -1,2 +1,0 @@
-DELETE FROM public.reader
-WHERE reader_card_number = '1233'

@@ -1,3 +1,0 @@
-INSERT INTO public.author (last_name, first_name)
-VALUES ('Булгаков', 'Михаил')
-RETURNING id;

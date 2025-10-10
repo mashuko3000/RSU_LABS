@@ -1,3 +1,0 @@
-UPDATE public.book_instance
-SET status = 'issued'
-WHERE inventory_number = 13;

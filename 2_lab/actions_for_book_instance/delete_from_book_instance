@@ -1,2 +1,0 @@
-DELETE FROM public.book_instance
-WHERE inventory_number = 14;

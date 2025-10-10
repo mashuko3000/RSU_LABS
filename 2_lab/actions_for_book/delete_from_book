@@ -1,2 +1,0 @@
-DELETE FROM public.book
-WHERE id = 2;

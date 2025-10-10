@@ -1,4 +1,0 @@
-INSERT INTO public.reader(reader_card_number, last_name, first_name, birth_date, gender, registration_date)
-VALUES
-	('1234', 'Ivanov', 'Ivan', '1990-05-15', 'male', NOW()),
-	('1233', 'Petrova', 'Anna', '1992-08-20', 'female', NOW());

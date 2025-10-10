@@ -1,3 +1,0 @@
-CREATE public.publishing_house
-SET name = 'Издательство ПУКПУК'
-WHERE id = 2;

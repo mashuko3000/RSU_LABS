@@ -1,3 +1,0 @@
-UPDATE public.reader
-SET birth_date = '1991-01-01'
-WHERE reader_card_number = '1234'

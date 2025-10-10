@@ -1,5 +1,0 @@
-SELECT * FROM public.author;
-SELECT * FROM public.publishing_house;
-SELECT * FROM public.book;
-SELECT * FROM public.location;
-SELECT * FROM public.book_instance

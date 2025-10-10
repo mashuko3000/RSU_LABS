@@ -1,3 +1,0 @@
-UPDATE public.book
-SET version = '2-е издание', circulation = 25000
-WHERE id = 1;
